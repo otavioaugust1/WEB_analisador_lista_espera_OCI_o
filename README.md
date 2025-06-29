@@ -1,0 +1,2 @@
+# WEB_analisador_lista_espera_OCI_o
+Este sistema foi desenvolvido para auxiliar estados e municípios no processamento e análise de suas filas de espera por serviços de saúde ou outros atendimentos públicos. A plataforma permite que, ao carregar dados de filas (CSV ou XLSX), sejam gerados resultados e insights valiosos para a gestão e otimização dos serviços, visando uma melhor alocação de recursos e a redução dos tempos de espera.
