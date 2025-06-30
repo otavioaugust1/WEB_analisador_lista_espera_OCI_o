@@ -107,26 +107,15 @@
           <h3>Resumo</h3>
           <div id="summaryResults"></div>
         </div>
-        <div class="results-actions">
-          <button id="downloadPdfButton" class="secondary-button">
-            <i class="fas fa-file-pdf"></i> Baixar Relatório PDF
-          </button>
-          <button
-            id="btnDownloadXLSX"
-            class="btn btn-success"
-            onclick="downloadXLSX()"
-          >
-            <span id="xlsxLoading" style="display: none">
-              <span
-                class="spinner-border spinner-border-sm"
-                role="status"
-                aria-hidden="true"
-              ></span>
-              Gerando...
-            </span>
-            <span id="xlsxText">Exportar para XLSX</span>
-          </button>
-        </div>
+        <!-- Na seção de resultados -->
+<div class="results-actions">
+    <button id="downloadPdfButton" class="secondary-button">
+        <i class="fas fa-file-pdf"></i> Baixar Relatório PDF
+    </button>
+    <button id="downloadXlsxButton" class="secondary-button">
+      <i class="fas fa-file-excel"></i> Exportar para XLSX
+  </button>
+</div>
         <div class="results-content">
           <pre id="jsonResults">
 Os resultados aparecerão aqui após a análise.</pre
@@ -135,7 +124,7 @@ Os resultados aparecerão aqui após a análise.</pre
       </section>
 
       <footer>
-        <p>VERSÃO 1.0 ----- Desenvolvido com dedicação por Otavio Augusto.</p>
+        <p>VERSÃO 2.1 ----- Desenvolvido com dedicação por Otavio Augusto.</p>
 
         <p>
           Acesse o código-fonte no GitHub:

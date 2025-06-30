@@ -1,13 +1,23 @@
+# ***************************************** version ***********************************************
+
+# *************************************************************************************************
+
+# Bibliotecas
 import io
 import os
 import re
-import tempfile
 from datetime import datetime
 from time import time
 
 import pandas as pd
-from flask import (Flask, jsonify, render_template, request, send_file,
-                   send_from_directory)
+from flask import (
+    Flask,
+    jsonify,
+    render_template,
+    request,
+    send_file,
+    send_from_directory,
+)
 from reportlab.lib.pagesizes import landscape, letter
 from reportlab.pdfgen import canvas
 from werkzeug.utils import secure_filename
@@ -961,43 +971,6 @@ def allowed_file(filename):
     return ('.' in filename and 
             filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS'])
 
-def detectar_formato_data(data_str):
-    """Detecta o formato da data em uma string"""
-    if pd.isna(data_str) or data_str.strip() == '':
-        return None
-
-    padroes = [
-        (r'^\d{4}-\d{2}-\d{2}$', '%Y-%m-%d'),
-        (r'^\d{4}/\d{2}/\d{2}$', '%Y/%m/%d'),
-        (r'^\d{2}/\d{2}/\d{4}$', '%d/%m/%Y'),
-        (r'^\d{2}-\d{2}-\d{4}$', '%d-%m-%Y'),
-        (r'^\d{2}/\d{2}/\d{2}$', '%d/%m/%y'),
-        (r'^\d{2}-\d{2}-\d{2}$', '%d-%m-%y'),
-        (r'^\d{8}$', '%d%m%Y'),
-        (r'^\d{1,2}/\d{1,2}/\d{4}$', '%d/%m/%Y'),
-        (r'^\d{1,2}-\d{1,2}-\d{4}$', '%d-%m-%Y'),
-    ]
-
-    for padrao, formato in padroes:
-        if re.match(padrao, data_str.strip()):
-            return formato
-    return None
-
-def converter_data(data_str):
-    """Converte uma string de data para o formato AAAA-MM-DD"""
-    if pd.isna(data_str) or data_str.strip() == '':
-        return ''
-
-    formato = detectar_formato_data(data_str)
-    if not formato:
-        return data_str
-
-    try:
-        data_obj = datetime.strptime(data_str.strip(), formato)
-        return data_obj.strftime('%Y-%m-%d')
-    except ValueError:
-        return data_str
-
 def formatar_dados(df):
     # Função auxiliar para aplicar zfill apenas se for número
     def aplicar_zfill(serie, tamanho):
@@ -1020,12 +993,26 @@ def formatar_dados(df):
     date_cols = ['DATA_SOLICITACAO', 'DATA_AUTORIZACAO', 'DATA_EXECUCAO']
     for col in date_cols:
         if col in df.columns:
-            df[col] = pd.to_datetime(df[col], errors='coerce').dt.strftime('%Y-%m-%d')
+            # Primeiro tenta converter para datetime
+            df[col] = pd.to_datetime(df[col], errors='coerce', format='%Y-%m-%d')
+            
+            # Para valores que não converteram, tenta outros formatos
+            mask = df[col].isna()
+            if mask.any():
+                df.loc[mask, col] = pd.to_datetime(
+                    df.loc[mask, col], 
+                    errors='coerce',
+                    format='%d/%m/%Y'
+                )
+            
+            # Formata para string no formato desejado
+            df[col] = df[col].dt.strftime('%d/%m/%Y')
             df[col] = df[col].replace('NaT', '')
 
     # Tratamento especial para CBO - converter NaN para string vazia
     if 'CBO' in df.columns:
         df['CBO'] = df['CBO'].fillna('').astype(str)
+    
     return df
 
 def analisar_dados(df):
@@ -1038,13 +1025,16 @@ def analisar_dados(df):
 
         total_solicitacoes = len(df)
         relatorio = []
-        relatorio_xlsx = []
-        pacientes_em_agrupamentos = set()
-        agrupamentos_encontrados = 0
+        relatorio_agrupamentos = []  # Lista para dados XLSX de agrupamentos
+        relatorio_nao_agrupados = []  # Lista para dados XLSX de não agrupados
 
         relatorio.append(
             "*********************    FORAM ENCONTRADOS {} CONJUNTOS DE OCI'S    ***********************\n"
         )
+
+        total_pacientes = len(df['DOCUMENTO_PACIENTE'].unique())
+        pacientes_em_agrupamentos = set()
+        agrupamentos_encontrados = 0
 
         for codigo, agrupamento in agrupamentos.items():
             codigos_obrigatorios = [
@@ -1085,20 +1075,17 @@ def analisar_dados(df):
                             relatorio.append(
                                 f"-------- OBG\tCNES_SOLC {registro['CNES_SOLICITANTE']}\tCID-{registro['CID10']}\tDT_SOLC-{registro['DATA_SOLICITACAO']}\t{item['codigo']} - {item['descricao']}"
                             )
-                            relatorio_xlsx.append({
+                            relatorio_agrupamentos.append({
                                 'AGRUPAMENTO_OCI': f'{codigo[:2]}.{codigo[2:4]}.{codigo[4:6]}.{codigo[6:]}',
                                 'DESCRICAO_OCI': agrupamento['nome'],
                                 'DOCUMENTO_PACIENTE': paciente,
                                 'DATA_SOLICITACAO': registro['DATA_SOLICITACAO'],
                                 'CNES_SOLICITANTE': registro['CNES_SOLICITANTE'],
-                                'TIPO_ITEM': 'OBRIGATÓRIO',
+                                'ITEM OBG/FAC (X)': 'OBG',
                                 'CID10': registro['CID10'],
                                 'CODIGO_SIGTAP': item['codigo'],
                                 'DESCRICAO_SIGTAP': item['descricao'],
-                                'CBO': registro['CBO'],
-                                'CNES_EXECUTANTE': registro.get('CNES_EXECUTANTE', ''),
-                                'DATA_AUTORIZACAO': registro.get('DATA_AUTORIZACAO', ''),
-                                'DATA_EXECUCAO': registro.get('DATA_EXECUCAO', ''),
+                                'CBO': registro['CBO']
                             })
 
                     # Itens facultativos
@@ -1111,118 +1098,136 @@ def analisar_dados(df):
                             relatorio.append(
                                 f"-------- FAC\tCNES_SOLC {registro['CNES_SOLICITANTE']}\tCID-{registro['CID10']}\tDT_SOLC-{registro['DATA_SOLICITACAO']}\t{item['codigo']} - {item['descricao']}"
                             )
-                            relatorio_xlsx.append({
+                            relatorio_agrupamentos.append({
                                 'AGRUPAMENTO_OCI': f'{codigo[:2]}.{codigo[2:4]}.{codigo[4:6]}.{codigo[6:]}',
                                 'DESCRICAO_OCI': agrupamento['nome'],
                                 'DOCUMENTO_PACIENTE': paciente,
                                 'DATA_SOLICITACAO': registro['DATA_SOLICITACAO'],
                                 'CNES_SOLICITANTE': registro['CNES_SOLICITANTE'],
-                                'TIPO_ITEM': 'FACULTATIVO',
+                                'ITEM OBG/FAC (X)': 'FAC',
                                 'CID10': registro['CID10'],
                                 'CODIGO_SIGTAP': item['codigo'],
                                 'DESCRICAO_SIGTAP': item['descricao'],
-                                'CBO': registro['CBO'],
-                                'CNES_EXECUTANTE': registro.get('CNES_EXECUTANTE', ''),
-                                'DATA_AUTORIZACAO': registro.get('DATA_AUTORIZACAO', ''),
-                                'DATA_EXECUCAO': registro.get('DATA_EXECUCAO', ''),
+                                'CBO': registro['CBO']
                             })
 
-        # Adiciona pacientes não agrupados ao relatório XLSX
+        # Pacientes não agrupados
         pacientes_restantes = df[~df['DOCUMENTO_PACIENTE'].isin(pacientes_em_agrupamentos)]
-        for _, registro in pacientes_restantes.iterrows():
+        relatorio.append(
+            '\n********************    PACIENTES QUE NÃO ESTÃO EM NENHUM CONJUNTO  ***********************'
+        )
+        for _, linha in pacientes_restantes.iterrows():
             descricao = next(
                 (item['descricao']
                 for g in agrupamentos.values()
                 for item in g['itens_obrigatorios'] + g['itens_facultativos']
-                if item['codigo'] == registro['CODIGO_SIGTAP']
+                if item['codigo'] == linha['CODIGO_SIGTAP']
                 ),
                 'Código não faz parte de um item de OCI',
             )
-            relatorio_xlsx.append({
-                'AGRUPAMENTO_OCI': 'NÃO AGRUPADO',
-                'DESCRICAO_OCI': 'NÃO AGRUPADO',
-                'DOCUMENTO_PACIENTE': registro['DOCUMENTO_PACIENTE'],
-                'DATA_SOLICITACAO': registro['DATA_SOLICITACAO'],
-                'CNES_SOLICITANTE': registro['CNES_SOLICITANTE'],
-                'TIPO_ITEM': 'NÃO AGRUPADO',
-                'CID10': registro['CID10'],
-                'CODIGO_SIGTAP': registro['CODIGO_SIGTAP'],
+            relatorio.append(
+                f"- CNES_SOLC {linha['CNES_SOLICITANTE']}\tCID {linha['CID10']}\tCNS/CPF_PAC {linha['DOCUMENTO_PACIENTE']}\tDT_SOLC {linha['DATA_SOLICITACAO']}\t{linha['CODIGO_SIGTAP']} - {descricao}"
+            )
+            relatorio_nao_agrupados.append({
+                'DOCUMENTO_PACIENTE': linha['DOCUMENTO_PACIENTE'],
+                'DATA_SOLICITACAO': linha['DATA_SOLICITACAO'],
+                'CNES_SOLICITANTE': linha['CNES_SOLICITANTE'],
+                'CID10': linha['CID10'],
+                'CODIGO_SIGTAP': linha['CODIGO_SIGTAP'],
                 'DESCRICAO_SIGTAP': descricao,
-                'CBO': registro['CBO'],
-                'CNES_EXECUTANTE': registro.get('CNES_EXECUTANTE', ''),
-                'DATA_AUTORIZACAO': registro.get('DATA_AUTORIZACAO', ''),
-                'DATA_EXECUCAO': registro.get('DATA_EXECUCAO', ''),
+                'CBO': linha['CBO']
             })
 
         # Atualiza o cabeçalho com o número real de conjuntos
         relatorio[0] = relatorio[0].format(agrupamentos_encontrados)
 
-        # Pacientes que não estão em nenhum agrupamento (para relatório textual)
-        relatorio.append(
-            '\n********************    PACIENTES QUE NÃO ESTÃO EM NENHUM CONJUNTO  ***********************'
-        )
-        for _, linha in pacientes_restantes.iterrows():
-            data_solc = linha['DATA_SOLICITACAO'].split(' ')[0] if linha['DATA_SOLICITACAO'] else ''
-            relatorio.append(
-                f"- CNES_SOLC {linha['CNES_SOLICITANTE']}\tCID {linha['CID10']}\tCNS/CPF_PAC {linha['DOCUMENTO_PACIENTE']}\tDT_SOLC {data_solc}\t{linha['CODIGO_SIGTAP']} - {descricao}"
-            )
-
         # Rodapé com data e hora
         relatorio.append('\n{:%d/%m/%Y %H:%M:%S}'.format(datetime.now()))
 
-        # Converte NaN para None em todo o relatório_xlsx
-        relatorio_xlsx_sanitizado = []
-        for item in relatorio_xlsx:
-            sanitized_item = {k: (v if pd.notna(v) else '') for k, v in item.items()}
-            relatorio_xlsx_sanitizado.append(sanitized_item)
-
         return {
             'relatorio': relatorio,
-            'relatorio_xlsx': relatorio_xlsx_sanitizado,
-            'total_pacientes': len(df['DOCUMENTO_PACIENTE'].unique()),
+            'relatorio_agrupamentos': relatorio_agrupamentos,
+            'relatorio_nao_agrupados': relatorio_nao_agrupados,
+            'total_pacientes': total_pacientes,
             'pacientes_agrupados': len(pacientes_em_agrupamentos),
             'agrupamentos_encontrados': agrupamentos_encontrados,
             'total_solicitacoes': total_solicitacoes,
         }
 
     except Exception as e:
+        app.logger.error(f"Erro na análise de dados: {str(e)}")
         raise e
 
 def gerar_pdf(relatorio, tempo_processamento):
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=landscape(letter))
     width, height = landscape(letter)
-
-    # Cabeçalho com logo
-    c.drawImage('static/img/agora-tem-especialistas.png', 30, height - 80, width=100, height=50)
-    c.setFont('Helvetica-Bold', 16)
-    c.drawString(150, height - 60, "Relatório de Análise de Filas OCI")
-    c.setFont('Helvetica', 10)
-    c.drawString(150, height - 80, f"Gerado em: {datetime.now().strftime('%d/%m/%Y')}")
-    c.drawString(150, height - 95, f"Tempo de processamento: {tempo_processamento} segundos")
-    c.line(30, height - 105, width - 30, height - 105)
-
-    c.setFont('Courier', 8)
-    y = height - 120
+    
+    # Configurações de layout
     margem_esquerda = 30
-
-    # Filtra apenas as linhas que contêm os agrupamentos OCI
-    linhas_agrupamentos = [linha for linha in relatorio if not linha.startswith('********************    PACIENTES QUE NÃO ESTÃO EM NENHUM CONJUNTO')]
+    linha_altura = 12
+    max_linhas_por_pagina = 50
+    pagina_numero = 1
+    data_hora = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
     
-    for linha in linhas_agrupamentos:
-        # Remove a hora das datas
-        linha_formatada = re.sub(r'(\d{4}-\d{2}-\d{2}) 00:00:00', r'\1', linha)
-        c.drawString(margem_esquerda, y, linha_formatada[:300])
-        y -= 10
-        if y < 30:
-            c.showPage()
-            c.setFont('Courier', 8)
-            y = height - 30
-
-    # Rodapé
-    c.setFont('Helvetica', 8)
-    c.drawString(margem_esquerda, 20, f"VERSÃO 1.0 - Gerado em {datetime.now().strftime('%d/%m/%Y')}")
+    # Filtra apenas as linhas de agrupamentos
+    linhas_agrupamentos = []
+    for linha in relatorio:
+        if linha.startswith('********************    PACIENTES QUE NÃO ESTÃO EM NENHUM CONJUNTO'):
+            break
+        linhas_agrupamentos.append(linha)
     
+    # Função para desenhar cabeçalho
+    def desenhar_cabecalho(pagina):
+        try:
+            c.drawImage('static/img/agora-tem-especialistas.png', margem_esquerda, height - 80, width=100, height=50)
+        except:
+            pass  # Ignora erro se imagem não existir
+        
+        c.setFont('Helvetica-Bold', 16)
+        c.drawString(margem_esquerda + 120, height - 60, "Relatório de Análise de Filas OCI")
+        c.setFont('Helvetica', 10)
+        c.drawString(margem_esquerda + 120, height - 80, f"Gerado em: {data_hora}")
+        c.drawString(margem_esquerda + 120, height - 95, f"Tempo de processamento: {tempo_processamento} segundos")
+        c.drawRightString(width - margem_esquerda, height - 95, f"Página {pagina}")
+        c.line(margem_esquerda, height - 105, width - margem_esquerda, height - 105)
+    
+    # Processamento das linhas
+    linha_index = 0
+    total_linhas = len(linhas_agrupamentos)
+    
+    while linha_index < total_linhas:
+        # Configurar nova página
+        c.setPageSize(landscape(letter))
+        desenhar_cabecalho(pagina_numero)
+        y = height - 120  # Posição inicial do conteúdo
+        
+        # Adicionar conteúdo da página
+        linhas_na_pagina = 0
+        while linhas_na_pagina < max_linhas_por_pagina and linha_index < total_linhas:
+            linha = linhas_agrupamentos[linha_index]
+            
+            # Escolher fonte apropriada
+            if linha.startswith('---') or linha.startswith('--------'):
+                c.setFont('Courier', 8)
+            else:
+                c.setFont('Helvetica-Bold', 9)
+                
+            c.drawString(margem_esquerda, y, linha[:200])  # Limita para evitar overflow
+            
+            y -= linha_altura
+            linha_index += 1
+            linhas_na_pagina += 1
+            
+            # Verificar se chegou ao final da página
+            if y < 50:
+                break
+        
+        # Finalizar página e preparar próxima
+        c.showPage()
+        pagina_numero += 1
+    
+    # Salvar PDF
     c.save()
     buffer.seek(0)
     return buffer
@@ -1279,7 +1284,8 @@ def analyze_file():
         return jsonify({
             'success': True,
             'relatorio': resultado['relatorio'],
-            'relatorio_xlsx': resultado['relatorio_xlsx'],
+            'relatorio_agrupamentos': resultado['relatorio_agrupamentos'],
+            'relatorio_nao_agrupados': resultado['relatorio_nao_agrupados'],
             'resumo': {
                 'total_pacientes': resultado['total_pacientes'],
                 'total_solicitacoes': resultado['total_solicitacoes'],
@@ -1295,15 +1301,21 @@ def analyze_file():
         })
 
     except Exception as e:
+        app.logger.error(f"Erro ao processar arquivo: {str(e)}")
         return jsonify({'error': f'Erro ao processar arquivo: {str(e)}'}), 500
 
 @app.route('/download_pdf', methods=['POST'])
 def download_pdf():
     try:
-        relatorio = request.json.get('relatorio')
-        tempo_processamento = request.json.get('tempo_processamento')
-        if not relatorio:
-            return jsonify({'error': 'Nenhum relatório fornecido'}), 400
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Dados não fornecidos'}), 400
+
+        relatorio = data.get('relatorio')
+        tempo_processamento = data.get('tempo_processamento')
+        
+        if not relatorio or tempo_processamento is None:
+            return jsonify({'error': 'Parâmetros faltando'}), 400
 
         pdf_buffer = gerar_pdf(relatorio, tempo_processamento)
         return send_file(
@@ -1313,34 +1325,39 @@ def download_pdf():
             mimetype='application/pdf'
         )
     except Exception as e:
+        app.logger.error(f"Erro ao gerar PDF: {str(e)}")
         return jsonify({'error': f'Erro ao gerar PDF: {str(e)}'}), 500
 
 @app.route('/download_xlsx', methods=['POST'])
 def download_xlsx():
     try:
-        relatorio_xlsx = request.json.get('relatorio_xlsx')
-        if not relatorio_xlsx:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Dados não fornecidos'}), 400
+
+        relatorio_agrupamentos = data.get('relatorio_agrupamentos', [])
+        relatorio_nao_agrupados = data.get('relatorio_nao_agrupados', [])
+        
+        if not relatorio_agrupamentos and not relatorio_nao_agrupados:
             return jsonify({'error': 'Nenhum relatório fornecido'}), 400
 
-        # Cria o DataFrame com os dados
-        df = pd.DataFrame(relatorio_xlsx)
+        # Cria DataFrames - tratamento seguro para dados ausentes
+        df_agrupamentos = pd.DataFrame(relatorio_agrupamentos) if relatorio_agrupamentos else pd.DataFrame()
+        df_nao_agrupados = pd.DataFrame(relatorio_nao_agrupados) if relatorio_nao_agrupados else pd.DataFrame()
         
-        # Ordena os dados
-        df.sort_values(
-            by=['AGRUPAMENTO_OCI', 'DOCUMENTO_PACIENTE', 'TIPO_ITEM', 'CODIGO_SIGTAP'],
-            inplace=True
-        )
-        
-        # Cria um buffer para o arquivo Excel
+        # Cria buffer Excel
         output = io.BytesIO()
-        
-        # Configura o ExcelWriter com formatação
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name='Relatorio_OCI', index=False)
+            # Aba de agrupamentos
+            if not df_agrupamentos.empty:
+                df_agrupamentos.to_excel(writer, sheet_name='Agrupamentos', index=False)
             
-            # Acessa a planilha e o workbook para formatação
+            # Aba de não agrupados
+            if not df_nao_agrupados.empty:
+                df_nao_agrupados.to_excel(writer, sheet_name='NaoAgrupados', index=False)
+            
+            # Formatação
             workbook = writer.book
-            worksheet = writer.sheets['Relatorio_OCI']
             
             # Formatação para cabeçalhos
             header_format = workbook.add_format({
@@ -1352,20 +1369,37 @@ def download_xlsx():
                 'border': 1
             })
             
-            # Aplica formatação aos cabeçalhos
-            for col_num, value in enumerate(df.columns.values):
-                worksheet.write(0, col_num, value, header_format)
-            
-            # Ajusta a largura das colunas
-            for i, col in enumerate(df.columns):
-                max_len = max(
-                    df[col].astype(str).map(len).max(),  # Maior valor na coluna
-                    len(col)  # Tamanho do cabeçalho
-                )
-                worksheet.set_column(i, i, min(max_len + 2, 50))  # Limita a 50 caracteres
-            
-            # Congela a primeira linha (cabeçalhos)
-            worksheet.freeze_panes(1, 0)
+            # Aplica formatação para cada aba
+            for sheet_name in writer.sheets:
+                worksheet = writer.sheets[sheet_name]
+                
+                # Determina colunas com base na aba
+                if sheet_name == 'Agrupamentos':
+                    columns = df_agrupamentos.columns
+                else:
+                    columns = df_nao_agrupados.columns
+                
+                # Aplica formatação ao cabeçalho
+                for col_num, value in enumerate(columns):
+                    worksheet.write(0, col_num, value, header_format)
+                
+                # Ajusta largura das colunas
+                for col_num, column in enumerate(columns):
+                    max_len = 0
+                    if sheet_name == 'Agrupamentos':
+                        max_len = df_agrupamentos[column].astype(str).map(len).max()
+                    else:
+                        max_len = df_nao_agrupados[column].astype(str).map(len).max()
+                    
+                    if pd.isna(max_len):
+                        max_len = len(column)
+                    else:
+                        max_len = max(max_len, len(column))
+                    
+                    worksheet.set_column(col_num, col_num, min(max_len + 2, 50))
+                
+                # Congela cabeçalho
+                worksheet.freeze_panes(1, 0)
 
         output.seek(0)
         
@@ -1376,6 +1410,7 @@ def download_xlsx():
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
     except Exception as e:
+        app.logger.error(f"Erro ao gerar XLSX: {str(e)}")
         return jsonify({'error': f'Erro ao gerar XLSX: {str(e)}'}), 500
 
 @app.route('/download-modelo')

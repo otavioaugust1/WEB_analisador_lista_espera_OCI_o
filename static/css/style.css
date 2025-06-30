@@ -458,3 +458,27 @@ body.dark-mode #processingModal .modal-content {
     opacity: 0.65;
     cursor: not-allowed;
 }
+
+/* Adicione este estilo */
+.secondary-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background-color: #28a745;
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+}
+
+.secondary-button:hover {
+    background-color: #218838;
+}
+
+/* Estilo para o botão de exportação XLSX */
+#downloadXlsxButton {
+    background-color: #1e7e34;
+}

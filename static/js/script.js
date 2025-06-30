@@ -27,8 +27,9 @@ $(document).ready(function () {
 
     let uploadedFile = null;
     let currentReport = null;
-    let currentXlsxData = null;
     let currentProcessingTime = 0;
+    let currentAgrupamentosXlsx = null;
+    let currentNaoAgrupadosXlsx = null;
     let dropTimeout = null;
 
     // Modo Escuro
@@ -124,7 +125,8 @@ $(document).ready(function () {
         uploadedFile = null;
         uploadMessage.removeClass('success error').text('');
         currentReport = null;
-        currentXlsxData = null;
+        currentAgrupamentosXlsx = null;
+        currentNaoAgrupadosXlsx = null;
 
         if (files.length > 0) {
             const file = files[0];
@@ -230,7 +232,8 @@ $(document).ready(function () {
                 } else if (response.success) {
                     uploadMessage.addClass('success').text('Análise concluída com sucesso!');
                     currentReport = response.relatorio;
-                    currentXlsxData = response.relatorio_xlsx;
+                    currentAgrupamentosXlsx = response.relatorio_agrupamentos || [];
+                    currentNaoAgrupadosXlsx = response.relatorio_nao_agrupados || [];
                     currentProcessingTime = response.resumo.tempo_processamento;
 
                     // Exibe o resumo
@@ -276,75 +279,6 @@ $(document).ready(function () {
             return;
         }
 
-        $.ajax({
-            url: '/download_pdf',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                relatorio: currentReport,
-                tempo_processamento: currentProcessingTime
-            }),
-            success: function (response) {
-                // O download é tratado automaticamente pelo navegador
-            },
-            error: function (jqXHR, textStatus, errorThrown) {
-                uploadMessage.addClass('error').text('Erro ao gerar PDF: ' + errorThrown);
-            }
-        });
-    });
-
-    // Download do XLSX
-    downloadXlsxButton.on('click', function () {
-        if (!currentXlsxData) {
-            uploadMessage.addClass('error').text('Nenhum relatório disponível para download.');
-            return;
-        }
-
-        $.ajax({
-            url: '/download_xlsx',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ relatorio_xlsx: currentXlsxData }),
-            success: function (response) {
-                // O download é tratado automaticamente pelo navegador
-            },
-            error: function (jqXHR, textStatus, errorThrown) {
-                uploadMessage.addClass('error').text('Erro ao gerar XLSX: ' + errorThrown);
-            }
-        });
-    });
-
-    // Adicione no início do arquivo (junto com as outras variáveis)
-    const processingModal = `
-<div id="processingModal" class="modal" style="display: none;">
-  <div class="modal-content" style="text-align: center; max-width: 400px;">
-    <h3>Processando Download</h3>
-    <div id="processingMessage">
-      <p><i class="fas fa-spinner fa-spin"></i> Preparando arquivo para download...</p>
-      <p>Este arquivo pode demorar um pouco para ser processado. Aguarde...</p>
-    </div>
-  </div>
-</div>`;
-
-    // Adicione após o $(document).ready(function () {
-    $('body').append(processingModal);
-
-    // Função para mostrar/ocultar o modal de processamento
-    function showProcessingModal(show) {
-        if (show) {
-            $('#processingModal').css('display', 'block');
-        } else {
-            $('#processingModal').css('display', 'none');
-        }
-    }
-
-    // Atualize as funções de download
-    downloadPdfButton.on('click', function () {
-        if (!currentReport) {
-            uploadMessage.addClass('error').text('Nenhum relatório disponível para download.');
-            return;
-        }
-
         showProcessingModal(true);
 
         $.ajax({
@@ -376,8 +310,9 @@ $(document).ready(function () {
         });
     });
 
+    // Download do XLSX
     downloadXlsxButton.on('click', function () {
-        if (!currentXlsxData) {
+        if (!currentAgrupamentosXlsx || currentAgrupamentosXlsx.length === 0) {
             uploadMessage.addClass('error').text('Nenhum relatório disponível para download.');
             return;
         }
@@ -388,17 +323,22 @@ $(document).ready(function () {
             url: '/download_xlsx',
             type: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({ relatorio_xlsx: currentXlsxData }),
+            data: JSON.stringify({ 
+                relatorio_agrupamentos: currentAgrupamentosXlsx,
+                relatorio_nao_agrupados: currentNaoAgrupadosXlsx
+            }),
             xhrFields: {
-                responseType: 'blob' // Isso é importante para receber o arquivo binário
+                responseType: 'blob'
             },
             success: function (response, status, xhr) {
                 // Cria um link temporário para forçar o download
-                const blob = new Blob([response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const blob = new Blob([response], { 
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+                });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'relatorio_oci.xlsx';
+                a.download = `relatorio_oci_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.xlsx`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -413,87 +353,31 @@ $(document).ready(function () {
         });
     });
 
+    // Adiciona o modal de processamento
+    const processingModal = `
+<div id="processingModal" class="modal" style="display: none;">
+  <div class="modal-content" style="text-align: center; max-width: 400px;">
+    <h3>Processando Download</h3>
+    <div id="processingMessage">
+      <p><i class="fas fa-spinner fa-spin"></i> Preparando arquivo para download...</p>
+      <p>Este arquivo pode demorar um pouco para ser processado. Aguarde...</p>
+    </div>
+  </div>
+</div>`;
+
+    $('body').append(processingModal);
+
+    // Função para mostrar/ocultar o modal de processamento
+    function showProcessingModal(show) {
+        if (show) {
+            $('#processingModal').css('display', 'block');
+        } else {
+            $('#processingModal').css('display', 'none');
+        }
+    }
+
     // Dowload do arquivo modelo
     document.getElementById("modelInfoButton").addEventListener("click", function () {
         window.location.href = "/download-modelo";
     });
 });
-
-function downloadXLSX() {
-    // Mostra o loader
-    $('#xlsxLoading').show();
-    
-    // Desabilita o botão para evitar múltiplos cliques
-    $('#btnDownloadXLSX').prop('disabled', true);
-
-    // Recupera os dados da análise
-    const analysisData = window.analysisResults;
-    
-    if (!analysisData || !analysisData.relatorio_xlsx) {
-        alert('Nenhum dado disponível para exportar. Realize uma análise primeiro.');
-        $('#xlsxLoading').hide();
-        $('#btnDownloadXLSX').prop('disabled', false);
-        return;
-    }
-
-    // Configura a requisição AJAX
-    $.ajax({
-        url: '/download_xlsx',
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({
-            relatorio_xlsx: analysisData.relatorio_xlsx
-        }),
-        success: function(response, status, xhr) {
-            // Cria um link temporário para download
-            const blob = new Blob([response], { 
-                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
-            });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            
-            // Extrai o nome do arquivo do cabeçalho da resposta
-            const contentDisposition = xhr.getResponseHeader('Content-Disposition');
-            let filename = 'relatorio_oci.xlsx';
-            if (contentDisposition) {
-                const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-                if (filenameMatch && filenameMatch[1]) {
-                    filename = filenameMatch[1];
-                }
-            }
-            
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            
-            // Limpa após o download
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        },
-        error: function(xhr, status, error) {
-            let errorMsg = 'Erro ao gerar o arquivo XLSX';
-            try {
-                const response = JSON.parse(xhr.responseText);
-                if (response.error) {
-                    errorMsg = response.error;
-                    if (response.details) {
-                        errorMsg += `\nDetalhes: ${response.details}`;
-                    }
-                }
-            } catch (e) {
-                console.error('Erro ao parsear resposta de erro:', e);
-            }
-            
-            alert(errorMsg);
-            console.error('Erro completo:', error, xhr.responseText);
-        },
-        complete: function() {
-            $('#xlsxLoading').hide();
-            $('#btnDownloadXLSX').prop('disabled', false);
-        },
-        xhrFields: {
-            responseType: 'blob' // Importante para receber o arquivo binário
-        }
-    });
-}
