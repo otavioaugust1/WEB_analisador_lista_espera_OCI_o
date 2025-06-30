@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>APP Analisador de Filas de Espera OCI</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div class="header-top">
+          <img
+            src="{{ url_for('static', filename='img/agora-tem-especialistas.png') }}"
+            alt="Agora Tem Especialistas"
+            class="logo"
+          />
+          <div class="header-buttons">
+            <button
+              id="modelInfoButton"
+              class="header-button"
+              title="Informações sobre o Modelo"
+            >
+              <i class="fas fa-file-csv"></i> Modelo
+            </button>
+            <button
+              id="helpButton"
+              class="header-button"
+              title="Dúvidas e Ajuda"
+            >
+              <i class="fas fa-question-circle"></i> Dúvidas
+            </button>
+            <button
+              id="darkModeToggle"
+              class="dark-mode-toggle"
+              title="Alternar Modo Escuro/Claro"
+            >
+              <i class="fas fa-moon"></i>
+            </button>
+          </div>
+        </div>
+        <h1>APP Analisador de Filas de Espera OCI</h1>
+        <p class="subtitle">Análise e Gestão Inteligente de Filas de Espera</p>
+      </header>
+
+      <section class="project-info">
+        <h2>Sobre o Projeto</h2>
+        <p>
+          Este sistema foi desenvolvido para auxiliar
+          <strong>estados e municípios</strong> no processamento e análise de
+          suas filas de espera por serviços de saúde ou outros atendimentos
+          públicos. A plataforma permite que, ao carregar dados de filas (CSV ou
+          XLSX), sejam gerados resultados e <strong>insights</strong> valiosos
+          para a gestão e otimização dos serviços, visando uma melhor alocação
+          de recursos e a redução dos tempos de espera.
+        </p>
+        <p>
+          Com esta aplicação web, gestores e equipes técnicas poderão submeter
+          seus dados de forma simplificada, utilizando a funcionalidade de
+          <strong>arrastar e soltar arquivos</strong>, e obter
+          <strong>relatórios detalhados</strong>, contribuindo para decisões
+          mais assertivas e aprimoramento contínuo da eficiência e qualidade do
+          serviço público.
+        </p>
+      </section>
+
+      <section class="upload-section">
+        <h2>Enviar Arquivo de Filas (.csv ou .xlsx)</h2>
+        <div id="drop-area" class="drop-area">
+          <p>Arraste e solte seu arquivo aqui, ou clique para selecionar</p>
+          <input
+            type="file"
+            id="fileElem"
+            accept=".csv, .xlsx"
+            style="display: none"
+          />
+          <label class="button" for="fileElem">Selecionar Arquivo</label>
+          <p id="fileName" class="file-name"></p>
+        </div>
+        <button id="analyzeButton" class="main-button" disabled>
+          Analisar Arquivo
+        </button>
+        <div id="uploadMessage" class="upload-message"></div>
+        <div id="progressContainer" class="progress-container">
+          <div id="progressBar" class="progress-bar"></div>
+        </div>
+        <div
+          id="progressBarProcess"
+          class="progress-container"
+          style="display: none"
+        >
+          <div id="progressBarProcessInner" class="progress-bar"></div>
+          <div id="progressText"></div>
+        </div>
+      </section>
+
+      <section class="analysis-results">
+        <h2>Resultados da Análise</h2>
+        <div class="results-summary">
+          <h3>Resumo</h3>
+          <div id="summaryResults"></div>
+        </div>
+        <div class="results-actions">
+          <button id="downloadPdfButton" class="secondary-button">
+            <i class="fas fa-file-pdf"></i> Baixar Relatório PDF
+          </button>
+          <button
+            id="btnDownloadXLSX"
+            class="btn btn-success"
+            onclick="downloadXLSX()"
+          >
+            <span id="xlsxLoading" style="display: none">
+              <span
+                class="spinner-border spinner-border-sm"
+                role="status"
+                aria-hidden="true"
+              ></span>
+              Gerando...
+            </span>
+            <span id="xlsxText">Exportar para XLSX</span>
+          </button>
+        </div>
+        <div class="results-content">
+          <pre id="jsonResults">
+Os resultados aparecerão aqui após a análise.</pre
+          >
+        </div>
+      </section>
+
+      <footer>
+        <p>VERSÃO 1.0 ----- Desenvolvido com dedicação por Otavio Augusto.</p>
+
+        <p>
+          Acesse o código-fonte no GitHub:
+          <a
+            href="https://github.com/otavioaugust1/APP_Analisador_Filas_Espera_OCI"
+            target="_blank"
+            >otavioaugust1/APP_Analisador_Filas_Espera_OCI</a
+          >
+        </p>
+      </footer>
+    </div>
+
+    <div id="modelModal" class="modal">
+      <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h2>Modelo de Colunas para o Arquivo de Filas</h2>
+        <p>
+          Para que a análise seja precisa, seu arquivo CSV ou XLSX deve conter
+          as seguintes colunas com os nomes exatos e formatos esperados.
+        </p>
+        <p>
+          Este modelo está em conformidade com as diretrizes estabelecidas pela
+          <a
+            href="https://bvs.saude.gov.br/bvs/saudelegis/Saes/2023/poc0003_20_04_2023.html"
+            target="_blank"
+            style="
+              color: initial;
+              text-decoration: underline;
+              font-weight: bold;
+            "
+          >
+            PORTARIA CONJUNTA SAES/SEIDIGI Nº 3, DE 18 DE ABRIL DE 2023 do
+            Ministério da Saúde.
+          </a>
+        </p>
+
+        <div class="column-details">
+          <h3>Colunas Obrigatórias:</h3>
+          <ul>
+            <li>
+              <strong>IDENTIFICADOR_LOCAL: </strong> Identificador único local
+              da solicitação (ex.Ficha 21 da unidade - Campo vazio / Campo
+              opcional).
+            </li>
+            <li>
+              <strong>DOCUMENTO_PACIENTE: * </strong> Número do documento do
+              paciente (ex: CPF ou CNS).
+            </li>
+            <li>
+              <strong>DATA_SOLICITACAO: * </strong> Data em que a solicitação
+              foi feita. Formato esperado: `AAAA-MM-DD` ou `DD/MM/AAAA`.
+            </li>
+            <li>
+              <strong>CNES_SOLICITANTE: * </strong> Código CNES da unidade de
+              saúde solicitante (com 7 digitos).
+            </li>
+            <li>
+              <strong>CNES_REGULADOR:</strong> Código CNES da unidade reguladora
+              (ou CNES da secretaria de saúde).
+            </li>
+            <li>
+              <strong>CODIGO_SIGTAP: * </strong> Código SIGTAP do procedimento
+              ou serviço solicitado (com 10 digitos).
+            </li>
+            <li>
+              <strong>CBO: * </strong> Código Brasileiro de Ocupações do
+              profissional (apenas para os codigos que começa com 030101 da
+              tabela SUS).
+            </li>
+            <li>
+              <strong>CID10:</strong> Código Internacional de Doenças (CID-10 -
+              Campo vazio / Campo opcional).
+            </li>
+            <li>
+              <strong>CODIGO_MODALIDADE_ASSISTENCIAL:</strong> Código da
+              modalidade assistencial.(ex: "01" ambulatorial ou "02" hospitalar
+              - Campo vazio / Campo opcional)
+            </li>
+            <li>
+              <strong>CODIGO_CARTER_SOLICITACAO:</strong> Código do caráter da
+              solicitação (ex: "01" urgência ou "02" eletiva - Campo vazio /
+              Campo opcional).
+            </li>
+            <li>
+              <strong>STATUS: * </strong> Situação atual da solicitação. Valores
+              esperados: "01" (Em Espera).
+            </li>
+            <li>
+              <strong>DATA_AUTORIZACAO:</strong> Data de autorização da
+              solicitação. Formato esperado: `AAAA-MM-DD` ou `DD/MM/AAAA`.
+              (Campo vazio se `STATUS` não for `Autorizado` ou `Executado`).
+            </li>
+            <li>
+              <strong>DATA_EXECUCAO:</strong> Data de execução do
+              serviço/procedimento. Formato esperado: `AAAA-MM-DD` ou
+              `DD/MM/AAAA`. (Campo vazio se `STATUS` não for `Executado`).
+            </li>
+            <li>
+              <strong>CNES_EXECUTANTE:</strong> Código CNES da unidade de saúde
+              executante. (com 7 digitos - Campo vazio / Campo opcional)
+            </li>
+          </ul>
+        </div>
+        <p>
+          Certifique-se de que os nomes das colunas em seu arquivo correspondem
+          <strong>exatamente</strong> aos listados acima para evitar erros de
+          processamento.
+        </p>
+        <p>
+          As colunas com <strong> * </strong> são obrigatorias e fundamental
+          para o processamento do arquivo.
+        </p>
+      </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  </body>
+</html>
