@@ -323,7 +323,7 @@ $(document).ready(function () {
             url: '/download_xlsx',
             type: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({ 
+            data: JSON.stringify({
                 relatorio_agrupamentos: currentAgrupamentosXlsx,
                 relatorio_nao_agrupados: currentNaoAgrupadosXlsx
             }),
@@ -332,13 +332,13 @@ $(document).ready(function () {
             },
             success: function (response, status, xhr) {
                 // Cria um link temporário para forçar o download
-                const blob = new Blob([response], { 
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+                const blob = new Blob([response], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `relatorio_oci_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.xlsx`;
+                a.download = `relatorio_oci_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.xlsx`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
