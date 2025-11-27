@@ -21,8 +21,7 @@ app = Flask(__name__)
 # Configurações
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['ALLOWED_EXTENSIONS'] = {'csv', 'xlsx'}
-app.config['MAX_CONTENT_LENGTH'] = 250 * 1024 * 1024  # 250MB
-
+app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200MB
 
 # Colunas obrigatórias
 REQUIRED_COLUMNS = [
@@ -1300,8 +1299,10 @@ def analyze_file():
         # Lê o arquivo conforme o tipo
         if file.filename.endswith('.csv'):
             df = pd.read_csv(file, encoding='utf-8', sep=';', dtype=str)
+            df.columns = df.columns.str.upper()  # Normaliza cabeçalhos para maiúsculas
         else:  # XLSX
             df = pd.read_excel(file, dtype=str)
+            df.columns = df.columns.str.upper()  # Normaliza cabeçalhos para maiúsculas
 
         # Preenche valores NaN com string vazia
         df = df.fillna('')
