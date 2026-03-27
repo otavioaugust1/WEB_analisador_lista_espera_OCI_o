@@ -618,7 +618,7 @@ docker run -p 5000:5000 oci-analyzer
 - ✅ Dark-mode e acessibilidade
 - ✅ Documentação revisada
 
-### v2.0.0 (Março 2026) ✨ REFATORAÇÃO
+### v2.0.0 (Abril 2025) ✨ REFATORAÇÃO
 - ✅ Migração para SQLite
 - ✅ Processamento em chunks (até 500MB)
 - ✅ Banco de dados gerenciável
