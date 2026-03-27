@@ -1,0 +1,347 @@
+/* Admin Shared Styles - Componentes reutilizáveis */
+
+/* Alert System */
+.alert {
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    display: none;
+    animation: slideDown 0.3s ease;
+}
+
+.alert.show {
+    display: block;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alert-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+body.dark-mode .alert-success {
+    background-color: #1e4620;
+    color: #90ee90;
+    border-color: #2d6b2d;
+}
+
+body.dark-mode .alert-error {
+    background-color: #4a1f1f;
+    color: #ff9999;
+    border-color: #662d2d;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.3s ease;
+}
+
+.modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease;
+}
+
+body.dark-mode .modal-content {
+    background-color: #333;
+    color: #eee;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 15px;
+}
+
+body.dark-mode .modal-header {
+    border-bottom-color: #555;
+}
+
+.modal-header h2 {
+    margin: 0;
+    color: #007bff; /* same as index */
+    font-size: 20px;
+}
+
+body.dark-mode .modal-header h2 {
+    color: #87ceeb; /* same as index dark */
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: #666;
+    transition: color 0.2s ease;
+}
+
+body.dark-mode .close-btn {
+    color: #bbb;
+}
+
+.close-btn:hover {
+    color: #000;
+}
+
+body.dark-mode .close-btn:hover {
+    color: #fff;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #dee2e6;
+}
+
+body.dark-mode .modal-footer {
+    border-top-color: #555;
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #333;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+body.dark-mode .form-group label {
+    color: #ddd;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-family: inherit;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+    box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #333;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+}
+
+body.dark-mode .form-group input,
+body.dark-mode .form-group textarea {
+    background-color: #444;
+    color: #eee;
+    border-color: #555;
+}
+
+body.dark-mode .form-group input:focus,
+body.dark-mode .form-group textarea:focus {
+    border-color: #666;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+}
+
+/* Button Styles - simplified neutral palette */
+.btn-novo, .btn-adicionar, .btn-save,
+.btn-exportar, .btn-voltar, .btn-action, .btn-table-action {
+    background-color: #444; /* solid neutral */
+    color: #fff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: background-color 0.12s ease, transform 0.08s ease;
+}
+
+.btn-novo:hover, .btn-adicionar:hover, .btn-save:hover,
+.btn-exportar:hover, .btn-voltar:hover, .btn-action:hover, .btn-table-action:hover {
+    background-color: #333;
+    transform: translateY(-1px);
+}
+
+.btn-cancel {
+    background-color: #666;
+    color: #fff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.btn-table-action {
+    background: transparent;
+    color: inherit;
+    padding: 6px;
+    border-radius: 4px;
+}
+
+.btn-table-action i {
+    font-size: 16px;
+}
+
+.btn-deletar {
+    background-color: #7a2222; /* subdued red for danger */
+}
+
+.btn-deletar:hover {
+    background-color: #611616;
+}
+
+/* Admin Header Styles */
+.admin-controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+body.dark-mode .btn-novo,
+body.dark-mode .btn-adicionar,
+body.dark-mode .btn-save,
+body.dark-mode .btn-exportar,
+body.dark-mode .btn-voltar,
+body.dark-mode .btn-action,
+body.dark-mode .btn-table-action {
+    background-color: #333;
+    color: #fff;
+}
+
+body.dark-mode .btn-novo:hover,
+body.dark-mode .btn-adicionar:hover,
+body.dark-mode .btn-save:hover,
+body.dark-mode .btn-exportar:hover,
+body.dark-mode .btn-voltar:hover,
+body.dark-mode .btn-action:hover,
+body.dark-mode .btn-table-action:hover {
+    background-color: #2a2a2a;
+}
+
+body.dark-mode .btn-deletar {
+    background-color: #5f1a1a;
+}
+
+body.dark-mode .btn-deletar:hover {
+    background-color: #4a1414;
+}
+
+/* Empty State */
+.empty-state, .empty-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.empty-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+}
+
+body.dark-mode .empty-state,
+body.dark-mode .empty-message {
+    color: #aaa;
+}
+
+/* Animations */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        padding: 20px;
+    }
+
+    .admin-controls {
+        flex-direction: column;
+    }
+
+    .admin-controls button {
+        width: 100%;
+    }
+
+    .modal-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .modal-footer {
+        flex-direction: column-reverse;
+    }
+
+    .modal-footer button {
+        width: 100%;
+    }
+}

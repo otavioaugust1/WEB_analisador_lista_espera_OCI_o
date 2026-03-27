@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciamento de Agrupamentos - OCI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin-shared.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_agrupamentos.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <img src="{{ url_for('static', filename='img/agora-tem-especialistas.png') }}" alt="Agora Tem Especialistas" class="logo"/>
+                <div class="header-buttons">
+                    <button class="header-button" onclick="window.location.href='/';" title="Voltar para análise">
+                        <i class="fas fa-arrow-left"></i> Voltar
+                    </button>
+                    <button id="modelInfoButton" class="header-button" title="Informações sobre o Modelo">
+                        <i class="fas fa-file-csv"></i> Modelo
+                    </button>
+                    <button id="helpButton" class="header-button" title="Dúvidas e Ajuda">
+                        <i class="fas fa-question-circle"></i> Dúvidas
+                    </button>
+                    <button id="darkModeToggle" class="dark-mode-toggle" title="Alternar Modo Escuro/Claro">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </div>
+            <h1>Gerenciamento de Agrupamentos</h1>
+            <p class="subtitle">Editar, incluir e excluir agrupamentos e procedimentos</p>
+        </header>
+
+        <section class="admin-controls">
+            <button class="btn-novo" title="Criar novo agrupamento"><i class="fas fa-plus"></i> Novo</button>
+            <button class="btn-exportar" data-format="json" title="Exportar como JSON"><i class="fas fa-file-alt"></i> JSON</button>
+            <button class="btn-exportar" data-format="csv" title="Exportar como CSV"><i class="fas fa-file-csv"></i> CSV</button>
+        </section>
+
+        <div id="alerta" class="alert"></div>
+
+        {% if agrupamentos %}
+        <div class="agrupamentos-table-wrapper">
+            <table class="agrupamentos-table">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nome</th>
+                        <th>Obrigatórios</th>
+                        <th>Facultativos</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for agrup in agrupamentos %}
+                    <tr>
+                        <td class="cell-codigo">{{ agrup.codigo }}</td>
+                        <td class="cell-nome">{{ agrup.nome }}{% if agrup.descricao %}<div class="row-descricao">{{ agrup.descricao }}</div>{% endif %}</td>
+                        <td class="cell-count">{{ agrup.qtd_obrigatorios }}</td>
+                        <td class="cell-count">{{ agrup.qtd_facultativos }}</td>
+                        <td class="cell-actions">
+                            <button class="btn-table-action btn-visualizar" data-codigo="{{ agrup.codigo }}"><i class="fas fa-eye"></i></button>
+                            <button class="btn-table-action btn-editar" data-codigo="{{ agrup.codigo }}"><i class="fas fa-edit"></i></button>
+                            <button class="btn-table-action btn-deletar" data-codigo="{{ agrup.codigo }}"><i class="fas fa-trash-alt"></i></button>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+            <h3>Nenhum agrupamento</h3>
+            <p>Clique em "Novo" para criar</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Modal -->
+    <div id="modalAgrupamento" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitulo">Novo Agrupamento</h2>
+                <button type="button" class="close-btn">&times;</button>
+            </div>
+
+            <form id="formAgrupamento">
+                <div class="form-group">
+                    <label for="codigo">Código *</label>
+                    <input type="text" id="codigo" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="nome">Nome *</label>
+                    <input type="text" id="nome" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="descricao">Descrição</label>
+                    <textarea id="descricao"></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel">Cancelar</button>
+                    <button type="submit" class="btn-save">💾 Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <p>VERSÃO 2.1 ----- Desenvolvido com dedicação por Otavio Augusto.</p>
+        <p>
+            <a href="https://github.com/otavioaugust1/WEB_analisador_lista_espera_OCI_o" target="_blank">
+                otavioaugust1/WEB_Analisador_Filas_Espera_OCI_o
+            </a>
+        </p>
+    </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/admin-shared.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/admin_agrupamentos.js') }}"></script>

@@ -56,6 +56,11 @@ $(document).ready(function () {
         applyDarkMode(!body.hasClass('dark-mode'));
     });
 
+    // Admin Button
+    $('#adminButton').on('click', function () {
+        window.location.href = '/admin/agrupamentos';
+    });
+
     // Modal
     modelInfoButton.on('click', function () {
         modelModal.css('display', 'block');

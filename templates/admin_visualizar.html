@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ agrupamento.nome }} - OCI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin-shared.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_visualizar.css') }}">
+</head>
+<body data-agrupamento-id="{{ agrupamento.id }}">
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <img src="{{ url_for('static', filename='img/agora-tem-especialistas.png') }}" alt="Agora Tem Especialistas" class="logo"/>
+                <div class="header-buttons">
+                    <button class="header-button" onclick="window.location.href='/admin/agrupamentos';" title="Voltar para agrupamentos">
+                        <i class="fas fa-arrow-left"></i> Voltar
+                    </button>
+                    <button id="modelInfoButton" class="header-button" title="Informações sobre o Modelo">
+                        <i class="fas fa-file-csv"></i> Modelo
+                    </button>
+                    <button id="helpButton" class="header-button" title="Dúvidas e Ajuda">
+                        <i class="fas fa-question-circle"></i> Dúvidas
+                    </button>
+                    <button id="darkModeToggle" class="dark-mode-toggle" title="Alternar Modo Escuro/Claro">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </div>
+            <h1>Detalhes do Agrupamento</h1>
+            <p class="subtitle">Gerenciar procedimentos obrigatórios e facultativos</p>
+        </header>
+
+        <div id="alerta" class="alert"></div>
+
+        <div class="agrupamento-info">
+            <div class="info-header">
+                <div class="info-title">
+                    <div class="info-codigo">{{ agrupamento.codigo }}</div>
+                    <h2>{{ agrupamento.nome }}</h2>
+                    {% if agrupamento.descricao %}
+                    <p class="info-descricao">{{ agrupamento.descricao }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Procedimentos Obrigatórios -->
+        <div class="procedimentos-section">
+            <div class="section-header">
+                <h2 class="section-title">Obrigatórios</h2>
+                <button class="btn-adicionar" data-tipo="obrigatorio">+ Adicionar</button>
+            </div>
+
+            {% if agrupamento.itens_obrigatorios %}
+            <div class="procedimentos-table">
+                <div class="table-header">
+                    <div>Código</div>
+                    <div>Descrição</div>
+                </div>
+
+                {% for proc in agrupamento.itens_obrigatorios %}
+                <div class="table-row">
+                    <div class="table-cell cell-codigo">{{ proc.codigo }}</div>
+                    <div class="table-cell">
+                        <div class="descr-and-actions">
+                            <div class="descr-text">{{ proc.descricao }}</div>
+                            <div class="actions-inline">
+                                    <button class="btn-table-action btn-table-editar" 
+                                        data-id="{{ proc.id }}" 
+                                        data-tipo="obrigatorio" 
+                                        data-codigo="{{ proc.codigo }}" 
+                                        data-descricao="{{ proc.descricao }}"><i class="fas fa-edit"></i></button>
+                                    <button class="btn-table-action btn-table-deletar" 
+                                        data-id="{{ proc.id }}" 
+                                        data-tipo="obrigatorio"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-message">
+                <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+                <p>Nenhum procedimento obrigatório</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Procedimentos Facultativos -->
+        <div class="procedimentos-section">
+            <div class="section-header">
+                <h2 class="section-title">Facultativos</h2>
+                <button class="btn-adicionar" data-tipo="facultativo">+ Adicionar</button>
+            </div>
+
+            {% if agrupamento.itens_facultativos %}
+            <div class="procedimentos-table">
+                <div class="table-header">
+                    <div>Código</div>
+                    <div>Descrição</div>
+                </div>
+
+                {% for proc in agrupamento.itens_facultativos %}
+                <div class="table-row">
+                    <div class="table-cell cell-codigo">{{ proc.codigo }}</div>
+                    <div class="table-cell">
+                        <div class="descr-and-actions">
+                            <div class="descr-text">{{ proc.descricao }}</div>
+                            <div class="actions-inline">
+                                <button class="btn-table-action btn-table-editar" 
+                                    data-id="{{ proc.id }}" 
+                                    data-tipo="facultativo" 
+                                    data-codigo="{{ proc.codigo }}" 
+                                    data-descricao="{{ proc.descricao }}"><i class="fas fa-edit"></i></button>
+                                <button class="btn-table-action btn-table-deletar" 
+                                    data-id="{{ proc.id }}" 
+                                    data-tipo="facultativo"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-message">
+                <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+                <p>Nenhum procedimento facultativo</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Modal Procedimento -->
+    <div id="modalProcedimento" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalProcTitulo">Novo Procedimento</h2>
+                <button type="button" class="close-btn">&times;</button>
+            </div>
+
+            <form id="formProcedimento">
+                <div class="form-group">
+                    <label for="procCodigo">Código SIGTAP *</label>
+                    <input type="text" id="procCodigo" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="procDescricao">Descrição *</label>
+                    <textarea id="procDescricao" required></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel">Cancelar</button>
+                    <button type="submit" class="btn-save">💾 Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <p>VERSÃO 2.1 ----- Desenvolvido com dedicação por Otavio Augusto.</p>
+        <p>
+            <a href="https://github.com/otavioaugust1/WEB_analisador_lista_espera_OCI_o" target="_blank">
+                otavioaugust1/WEB_Analisador_Filas_Espera_OCI_o
+            </a>
+        </p>
+    </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/admin-shared.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/admin_visualizar.js') }}"></script>
