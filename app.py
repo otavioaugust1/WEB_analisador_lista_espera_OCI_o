@@ -9,6 +9,7 @@ Versão: 2.0.0 - Refatorada com SQLite
 import io
 import os
 import re
+import sys
 from datetime import datetime
 from pathlib import Path
 from time import time
@@ -30,16 +31,32 @@ import database
 
 # ==================== CONFIGURAÇÃO DA APLICAÇÃO ====================
 
-app = Flask(__name__)
+# Detectar se está rodando como bundle PyInstaller
+if getattr(sys, 'frozen', False):
+    # Rodando como executável compilado
+    _bundle_dir = sys._MEIPASS          # recursos bundled (templates, static)
+    _data_dir = Path(sys.executable).parent  # diretório do .exe (db, uploads)
+else:
+    _bundle_dir = Path(__file__).parent
+    _data_dir = Path(__file__).parent
 
-app.config['UPLOAD_FOLDER'] = 'uploads'
+app = Flask(
+    __name__,
+    template_folder=str(Path(_bundle_dir) / 'templates'),
+    static_folder=str(Path(_bundle_dir) / 'static'),
+)
+
+app.config['UPLOAD_FOLDER'] = str(_data_dir / 'uploads')
 app.config['ALLOWED_EXTENSIONS'] = {'csv', 'xlsx'}
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB
 app.config['JSON_SORT_KEYS'] = False
 
 # Criar pastas se não existirem
 Path(app.config['UPLOAD_FOLDER']).mkdir(exist_ok=True)
-Path('db').mkdir(exist_ok=True)
+(_data_dir / 'db').mkdir(exist_ok=True)
+
+# Configurar caminho do banco de dados
+database.DATABASE_FILE = str(_data_dir / 'db' / 'agrupamentos.db')
 
 # Inicializar banco de dados
 database.init_database()

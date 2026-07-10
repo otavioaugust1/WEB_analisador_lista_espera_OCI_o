@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Analisador de Lista de Espera - Versão Desktop (PyWebView)
 Para usar em Windows ou outros sistemas desktop
@@ -13,6 +14,15 @@ import os
 import sys
 import threading
 from pathlib import Path
+
+# Definir diretório de dados antes de importar a app
+if getattr(sys, 'frozen', False):
+    # Executável PyInstaller: usar pasta ao lado do .exe
+    _app_dir = Path(sys.executable).parent
+else:
+    _app_dir = Path(__file__).parent
+
+os.chdir(str(_app_dir))
 
 import webview
 
@@ -49,9 +59,9 @@ def main():
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
 
-    print('✓ Servidor Flask iniciado')
+    print('[OK] Servidor Flask iniciado')
     print()
-    print('Abrindo janela da aplicação...')
+    print('Abrindo janela da aplicacao...')
 
     # Criar janela PyWebView
     window = webview.create_window(
@@ -66,12 +76,9 @@ def main():
 
     # Iniciar aplicação
     try:
-        webview.start(
-            debug=False,
-            http_server_port=5001,  # Porta para PyWebView (não conflita com Flask)
-        )
+        webview.start()
     except KeyboardInterrupt:
-        print('\n✓ Aplicação encerrada pelo usuário')
+        print('\nAplicacao encerrada pelo usuario')
         sys.exit(0)
 
 
