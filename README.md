@@ -8,6 +8,7 @@
 ![Flask](https://img.shields.io/badge/flask-3.1+-green.svg)
 ![SQLite](https://img.shields.io/badge/database-SQLite-blue.svg)
 ![Status](https://img.shields.io/badge/status-Active-brightgreen.svg)
+![Desktop](https://img.shields.io/badge/desktop-PyWebView-orange.svg)
 
 **Análise inteligente de filas de espera com agrupamento dinâmico de procedimentos**
 
@@ -125,7 +126,7 @@ python app_desktop.py
 **Gerar .exe (Windows)**:
 ```bash
 pip install pyinstaller
-pyinstaller --onefile --windowed app_desktop.py
+pyinstaller --onefile --windowed --add-data "templates;templates" --add-data "static;static" --add-data "db/agrupamentos.db;db" --add-data "db/arquivo_modelo.xlsx;db" app_desktop.py
 # Arquivo gerado em: dist/app_desktop.exe
 ```
 
@@ -219,8 +220,9 @@ A versão desktop usa **PyWebView** para executar a aplicação como uma janela 
 ### Características
 - Mesma interface web, mas sem navegador visível
 - Janela redimensionável (1400x900px padrão)
-- Inicia servidor Flask internamente
+- Inicia servidor Flask internamente em thread separada (porta 5000)
 - Indicado para uso local em postos de saúde
+- Compatível com executável `.exe` gerado via PyInstaller
 
 ### Como Usar
 
@@ -229,9 +231,25 @@ python app_desktop.py
 ```
 
 A aplicação:
-1. Cria pastas necessárias (`db/`, `uploads/`)
-2. Inicia servidor Flask (porta 5000)
-3. Abre janela PyWebView apontando para localhost:5000
+1. Define o diretório de trabalho corretamente (funciona tanto em dev quanto no `.exe`)
+2. Cria pastas necessárias (`db/`, `uploads/`)
+3. Inicia servidor Flask (porta 5000)
+4. Abre janela PyWebView apontando para localhost:5000
+
+### Banco de Dados no Executável
+
+Ao gerar o `.exe`, o `agrupamentos.db` e o `arquivo_modelo.xlsx` são **empacotados dentro do executável** como dados seed. Na **primeira execução**, eles são copiados automaticamente para a pasta ao lado do `.exe`:
+
+```
+dist/
+├── app_desktop.exe
+├── db/
+│   ├── agrupamentos.db       ← criado na 1ª execução (com 28 agrupamentos OCI)
+│   └── arquivo_modelo.xlsx   ← criado na 1ª execução
+└── uploads/                  ← criado automaticamente
+```
+
+Nas execuções seguintes, o banco local é mantido — todas as alterações feitas pelo usuário são preservadas.
 
 ### Distribuir como .exe
 
@@ -239,10 +257,17 @@ Para enviar para colega sem Python instalado:
 
 ```bash
 pip install pyinstaller
-pyinstaller --onefile --windowed --icon=logo.ico app_desktop.py
+pyinstaller --onefile --windowed \
+  --add-data "templates;templates" \
+  --add-data "static;static" \
+  --add-data "db/agrupamentos.db;db" \
+  --add-data "db/arquivo_modelo.xlsx;db" \
+  app_desktop.py
 ```
 
-Resultado: `dist/app_desktop.exe` (executável único, ~100MB)
+Resultado: `dist/app_desktop.exe` (executável único, ~100–150MB)
+
+> ⚠️ **Antes de compilar**: certifique-se de que o `db/agrupamentos.db` está atualizado com os agrupamentos desejados, pois ele será o banco seed distribuído junto ao `.exe`.
 
 ---
 
@@ -526,7 +551,7 @@ docker run -p 5000:5000 oci-analyzer
 
 ---
 
-## 🆕 Novidades (v2.1+)
+## 🆕 Novidades (v2.2+)
 
 ### ✅ Gerenciamento Completo
 - Painel visual de CRUD para agrupamentos
@@ -580,6 +605,19 @@ docker run -p 5000:5000 oci-analyzer
 - Verifique instalação: `pip list | grep pywebview`
 - Reinstale: `pip install --upgrade pywebview`
 
+### Erro `UnicodeEncodeError` ao rodar `app_desktop.py`
+- Ocorre em Windows com encoding CP1252 (padrão)
+- Já corrigido na versão 2.2.0 — atualize o `app_desktop.py`
+
+### Executável abre mas mostra "Internal Server Error"
+- Verifique se compilou com todos os `--add-data` obrigatórios
+- O `sys` deve estar importado em `app.py` (necessário para detecção do bundle)
+- Recompile usando o comando completo da seção [Distribuir como .exe](#distribuir-como-exe)
+
+### Agrupamentos não aparecem no executável
+- O banco seed é copiado apenas se `db/agrupamentos.db` **não existir** ao lado do `.exe`
+- Para resetar: delete `dist/db/agrupamentos.db` e reinicie o `.exe`
+
 ---
 
 ## 📊 Recursos Adicionais
@@ -606,6 +644,15 @@ docker run -p 5000:5000 oci-analyzer
 ---
 
 ## 🔄 Changelog
+
+### v2.2.0 (Julho 2026) 🖥️ CORREÇÕES DESKTOP
+- ✅ Corrigido `UnicodeEncodeError` no Windows (encoding CP1252)
+- ✅ Corrigido `TypeError: start() got unexpected keyword argument` no PyWebView
+- ✅ Corrigido "Internal Server Error" no executável (faltava `import sys` em `app.py`)
+- ✅ Detecção automática de bundle PyInstaller (`sys.frozen`) para paths corretos
+- ✅ Banco de dados e modelo xlsx empacotados como seed no `.exe`
+- ✅ Cópia automática do banco seed na primeira execução do `.exe`
+- ✅ Pastas `db/` e `uploads/` criadas ao lado do `.exe` (não no diretório temp)
 
 ### v2.1.0 (Março 2026) ⚙️ GERENCIAMENTO COMPLETO
 - ✅ Painel CRUD para agrupamentos

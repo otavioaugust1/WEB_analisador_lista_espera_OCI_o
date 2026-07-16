@@ -5,7 +5,7 @@ a = Analysis(
     ['app_desktop.py'],
     pathex=[],
     binaries=[],
-    datas=[('templates', 'templates'), ('static', 'static')],
+    datas=[('templates', 'templates'), ('static', 'static'), ('db/agrupamentos.db', 'db'), ('db/arquivo_modelo.xlsx', 'db')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

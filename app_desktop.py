@@ -11,6 +11,7 @@ Execução:
 """
 
 import os
+import shutil
 import sys
 import threading
 from pathlib import Path
@@ -19,10 +20,27 @@ from pathlib import Path
 if getattr(sys, 'frozen', False):
     # Executável PyInstaller: usar pasta ao lado do .exe
     _app_dir = Path(sys.executable).parent
+    _bundle_dir = Path(sys._MEIPASS)
 else:
     _app_dir = Path(__file__).parent
+    _bundle_dir = _app_dir
 
 os.chdir(str(_app_dir))
+
+# Se rodando como exe e o banco de dados não existe ainda,
+# copiar o banco seed que foi bundled no executável
+_db_dest = _app_dir / 'db' / 'agrupamentos.db'
+_db_seed = _bundle_dir / 'db' / 'agrupamentos.db'
+if not _db_dest.exists() and _db_seed.exists():
+    _db_dest.parent.mkdir(exist_ok=True)
+    shutil.copy2(str(_db_seed), str(_db_dest))
+
+# Copiar arquivo modelo xlsx se não existir ao lado do exe
+_modelo_dest = _app_dir / 'db' / 'arquivo_modelo.xlsx'
+_modelo_seed = _bundle_dir / 'db' / 'arquivo_modelo.xlsx'
+if not _modelo_dest.exists() and _modelo_seed.exists():
+    _modelo_dest.parent.mkdir(exist_ok=True)
+    shutil.copy2(str(_modelo_seed), str(_modelo_dest))
 
 import webview
 
